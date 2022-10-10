@@ -1,0 +1,4 @@
+*logs/
+*.DS_Store
+*.log
+*secret.txt
