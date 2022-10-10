@@ -5,12 +5,12 @@
 - Dockerfile file
 - requirements.txt file
 - secret.txt
-| Note: The secret.txt file is for passing the values at built time
-| It is also added to .gitignore to avoid exposing it to git repository
 - result.csv file: the test result from testing main.py
 
-| Dynamodb host unknown at the time of testing the built image. However, as it is expected result.csv should be created on the current working directory, i.e /journee.
-| With the efs of task-2, the result.csv should be in /export/result.csv
+``` Note: The secret.txt file is for passing the values at built time It is also added to .gitignore to avoid exposing it to git repository ```
+
+``` Dynamodb host unknown at the time of testing the built image. However, as it is expected result.csv should be created on the current working directory, i.e /journee. ```
+``` With the efs of task-2, the result.csv should be in /export/result.csv```
 
 ### See the Dockerfile & .gitignore for secuirty practices on not exposing secrets
 
