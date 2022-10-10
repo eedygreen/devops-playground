@@ -9,17 +9,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from typing import List
+import uvicorn
 
 
-# Defining the schema
+# Defined the schema attributes
 class Item(BaseModel):
     loc: str
     message: str
     type: str
 
+# response from schema
 class ErrorResponse(BaseModel):
     detail: List[Item]
 
+# method to validate the schema
 def error_validation_schema(request: Request, exc: RequestValidationError):
     errors = {
         "details": [
@@ -36,7 +39,7 @@ def error_validation_schema(request: Request, exc: RequestValidationError):
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
 
-
+# main application
 app = FastAPI(
     exception_handlers = { RequestValidationError: error_validation_schema },
     responses = {
@@ -47,24 +50,26 @@ app = FastAPI(
     }
 )
 
-
+# users current working directory
 CWD = pathlib.Path.cwd()
+
+# logs
 logging.basicConfig(filename=f"{CWD}/logs/app.log", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DynamoDB():
-    def __init__(self, dy_rs: str):
-        self.dy_rs = dy_rs
+    def __init__(self, dynamodb_resources: str):
+        self.dynamodb_resources = dynamodb_resources
         self.table = None
 
     def describe_table(self, table_name: str):
         """Determine dynamodb table existence
-           :param dy_rs: Dynamodb resources
+           :param dynamodb_resources: Dynamodb resources
            :param table_name: The table name 
            :return: table name if exists
         """
         try:
-            table = self.dy_rs.Table(table_name)
+            table = self.dynamodb_resources.Table(table_name)
             table.load()
             table_exists = True
         except botocore.exceptions.ClientError as error:
@@ -95,7 +100,7 @@ class DynamoDB():
             while not done:
                 if start_key:
                     key_words['ExclusiveStartKey'] = start_key
-                table = self.dy_rs.Table(table_name)
+                table = self.dynamodb_resources.Table(table_name)
                 response = table.scan(**key_words)
                 extract_data.extend(response.get('Items', []))
                 start_key = response.get('LastEvaluateKey', None)
@@ -107,12 +112,12 @@ class DynamoDB():
 
 # secret endpoint
 @app.get("/secret")
-def publish_data(dy_rs: str, table_name: str):
+def publish_data(dynamodb_resources: str, table_name: str):
     """
     This is a secret endpoint that
     returns the retrived items from interview_spaces table as a Json file
     """
-    dynamodb = DynamoDB(dy_rs)
+    dynamodb = DynamoDB(dynamodb_resources)
     table_exists =  dynamodb.describe_table(table_name)
     if not table_exists:
         logger.info(f"View the {table_name} error in the describe function section!")
@@ -136,3 +141,6 @@ def publish_data(dy_rs: str, table_name: str):
 
 if __name__ == "__main__":
     publish_data(boto3.resource('dynamodb'), 'interview_spaces')
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+    server = uvicorn.Server(config)
+    server.run()
